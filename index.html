@@ -2,79 +2,71 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@100;200;300;400;600&display=swap"
-      rel="stylesheet"
-    />
+    <meta name="theme-color" content="#0b1020">
+    <title>Encryptly — Password Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    
-    <div class="container">
+    <main class="app-shell">
+        <header class="brand-bar">
+            <a class="brand" href="/" aria-label="Encryptly home">
+                <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7.5 10V7.75a4.5 4.5 0 1 1 9 0V10M6.75 10h10.5a1.5 1.5 0 0 1 1.5 1.5v7a1.5 1.5 0 0 1-1.5 1.5H6.75a1.5 1.5 0 0 1-1.5-1.5v-7a1.5 1.5 0 0 1 1.5-1.5Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg></span>
+                <span>encryptly</span>
+            </a>
+        
+        </header>
 
-        <h1>Password Generator</h1>
+        <section class="intro" aria-labelledby="page-title">
+            <p class="eyebrow">Password generator</p>
+            <h1 id="page-title">Create a password<br><em>you can trust.</em></h1>
+            <p>Generate a strong, unique password in seconds. Nothing leaves your device.</p>
+        </section>
 
-        <div class="display-container">
-
-            <input readonly placeholder="Password" class="display" data-passwordDisplay>
-
-            <button class="copyBtn" data-copy>
-                <span class="tooltip" data-copyMsg></span>
-                <img src="./assets/copy.svg" alt="copy" width="23" height="23">
-            </button>
-
-        </div>
-
-
-        <div class="input-container">
-
-            <!--password length section-->
-            <div class="length-container">
-                <p>Password Length</p>
-                <p data-lengthNumber>0</p>
-            </div>
-            
-            <!--slider-->
-            <input type="range" min="1" max="20" class="slider" step="1" data-lengthSlider>
-
-            <!-- checkboxes-->
-            <div class="check">
-                <input type="checkbox" id="uppercase">
-                <label for="uppercase">Includes Uppercase letters</label>
+        <section class="generator-card" aria-label="Password generator">
+            <div class="password-panel">
+                <div class="panel-label"><span>Your new password</span><span class="generated-state" data-generatedState>Ready to generate</span></div>
+                <div class="password-output">
+                    <input readonly placeholder="Select options below" class="display" data-passwordDisplay aria-label="Generated password">
+                    <button class="copyBtn" data-copy aria-label="Copy password" disabled>
+                        <span class="tooltip" data-copyMsg role="status"></span>
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>
+                    </button>
+                </div>
             </div>
 
-            <div class="check">
-                <input type="checkbox" id="lowercase">
-                <label for="lowercase">Includes Lowercase letters</label>
+            <div class="controls">
+                <div class="length-section">
+                    <div class="section-heading"><label for="lengthSlider">Password length</label><output data-lengthNumber for="lengthSlider">10</output></div>
+                    <input id="lengthSlider" type="range" min="4" max="32" value="10" class="slider" step="1" data-lengthSlider>
+                    <div class="range-labels" aria-hidden="true"><span>4</span><span>32</span></div>
+                </div>
+
+                <fieldset class="character-options">
+                    <legend>Include characters</legend>
+                    <div class="options-grid">
+                        <label class="check" for="uppercase"><input type="checkbox" id="uppercase" checked><span class="custom-check"></span><span><strong>Uppercase</strong><small>ABC</small></span></label>
+                        <label class="check" for="lowercase"><input type="checkbox" id="lowercase" checked><span class="custom-check"></span><span><strong>Lowercase</strong><small>abc</small></span></label>
+                        <label class="check" for="numbers"><input type="checkbox" id="numbers" checked><span class="custom-check"></span><span><strong>Numbers</strong><small>123</small></span></label>
+                        <label class="check" for="symbols"><input type="checkbox" id="symbols"><span class="custom-check"></span><span><strong>Symbols</strong><small>#&amp;!</small></span></label>
+                    </div>
+                </fieldset>
+
+                <div class="strength-container">
+                    <div><span class="strength-label">Password strength</span><strong data-strengthText>Good</strong></div>
+                    <div class="strength-meter" aria-label="Password strength: good" data-strengthMeter><span></span><span></span><span></span><span></span></div>
+                </div>
+
+                <button class="generateButton" type="button"><span>Generate secure password</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v6h-6"/></svg></button>
+                <p class="form-message" data-formMessage role="status"></p>
             </div>
+        </section>
 
-            <div class="check">
-                <input type="checkbox" id="numbers">
-                <label for="numbers">Includes Numbers </label>
-            </div>
-
-            <div class="check">
-                <input type="checkbox" id="symbols">
-                <label for="symbols">Includes Symbols </label>
-            </div>
-
-            <!-- strength section-->
-            <div class="strength-container">
-                <p>Strength</p>
-                <div class="indicator" data-indicator></div>
-            </div>
-
-            <!-- generate password-->
-            <button class="generateButton">Generate Password</button>
-
-        </div>
-
-    </div>
+        <footer><span class="footer-lock">⌁</span> Built for safer everyday access</footer>
+    </main>
     <script src="script.js"></script>
 </body>
 </html>

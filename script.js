@@ -1,216 +1,106 @@
 const inputSlider = document.querySelector("[data-lengthSlider]");
 const lengthDisplay = document.querySelector("[data-lengthNumber]");
-
 const passwordDisplay = document.querySelector("[data-passwordDisplay]");
 const copyBtn = document.querySelector("[data-copy]");
 const copyMsg = document.querySelector("[data-copyMsg]");
-const uppercaseCheck = document.querySelector("#uppercase");
-const lowercaseCheck = document.querySelector("#lowercase");
-const numbersCheck = document.querySelector("#numbers");
-const symbolsCheck = document.querySelector("#symbols");
-const indicator = document.querySelector("[data-indicator]");
+const generatedState = document.querySelector("[data-generatedState]");
+const strengthText = document.querySelector("[data-strengthText]");
+const strengthMeter = document.querySelector("[data-strengthMeter]");
+const formMessage = document.querySelector("[data-formMessage]");
 const generateBtn = document.querySelector(".generateButton");
-const allCheckBox = document.querySelectorAll("input[type=checkbox]");
+const allCheckBox = [...document.querySelectorAll("input[type=checkbox]")];
 const symbols = '~`!@#$%^&*()_-+={[}]|:;"<,>.?/';
 
-
-//initially
 let password = "";
 let passwordLength = 10;
-let checkCount = 0;
-handleSlider();
-//ste strength circle color to grey
-setIndicator("#ccc");
+let copyTimeout;
 
+function randomInRange(min, max) {
+    const range = max - min;
+    const cutoff = Math.floor(0x100000000 / range) * range;
+    const value = new Uint32Array(1);
 
-//set passwordLength
-function handleSlider() {
+    do { crypto.getRandomValues(value); } while (value[0] >= cutoff);
+    return min + (value[0] % range);
+}
+
+function getSelectedGenerators() {
+    const generators = [];
+    if (document.querySelector("#uppercase").checked) generators.push(() => String.fromCharCode(randomInRange(65, 91)));
+    if (document.querySelector("#lowercase").checked) generators.push(() => String.fromCharCode(randomInRange(97, 123)));
+    if (document.querySelector("#numbers").checked) generators.push(() => String(randomInRange(0, 10)));
+    if (document.querySelector("#symbols").checked) generators.push(() => symbols[randomInRange(0, symbols.length)]);
+    return generators;
+}
+
+function updateSlider() {
     inputSlider.value = passwordLength;
-    lengthDisplay.innerText = passwordLength;
-    //or kuch bhi karna chahiye ? - HW
-    const min = inputSlider.min;
-    const max = inputSlider.max;
-    inputSlider.style.backgroundSize = ( (passwordLength - min)*100/(max - min)) + "% 100%"
+    lengthDisplay.textContent = passwordLength;
+    const percentage = ((passwordLength - Number(inputSlider.min)) * 100) / (Number(inputSlider.max) - Number(inputSlider.min));
+    inputSlider.style.setProperty("--fill", `${percentage}%`);
 }
 
-function setIndicator(color) {
-    indicator.style.backgroundColor = color;
-    indicator.style.boxShadow = `0px 0px 12px 1px ${color}`;
+function getStrength() {
+    const count = getSelectedGenerators().length;
+    if (count === 0 || passwordLength < 6) return ["weak", "Weak"];
+    if (count <= 1 || passwordLength < 8) return ["fair", "Fair"];
+    if (count >= 3 && passwordLength >= 12) return ["strong", "Strong"];
+    return ["good", "Good"];
 }
 
-function getRndInteger(min, max) {
-    return Math.floor(Math.random() * (max - min)) + min;
+function updateStrength() {
+    const [level, label] = getStrength();
+    strengthText.textContent = label;
+    strengthText.style.color = level === "weak" ? "var(--danger)" : level === "strong" ? "var(--mint)" : "var(--warning)";
+    strengthMeter.dataset.strength = level;
+    strengthMeter.setAttribute("aria-label", `Password strength: ${label.toLowerCase()}`);
 }
 
-function generateRandomNumber() {
-    return getRndInteger(0,9);
-}
-
-function generateLowerCase() {  
-       return String.fromCharCode(getRndInteger(97,123))
-}
-
-function generateUpperCase() {  
-    return String.fromCharCode(getRndInteger(65,91))
-}
-
-function generateSymbol() {
-    const randNum = getRndInteger(0, symbols.length);
-    return symbols.charAt(randNum);
-}
-
-function calcStrength() {
-    let hasUpper = false;
-    let hasLower = false;
-    let hasNum = false;
-    let hasSym = false;
-    if (uppercaseCheck.checked) hasUpper = true;
-    if (lowercaseCheck.checked) hasLower = true;
-    if (numbersCheck.checked) hasNum = true;
-    if (symbolsCheck.checked) hasSym = true;
-  
-    if (hasUpper && hasLower && (hasNum || hasSym) && passwordLength >= 8) {
-      setIndicator("#0f0");
-    } else if (
-      (hasLower || hasUpper) &&
-      (hasNum || hasSym) &&
-      passwordLength >= 6
-    ) {
-      setIndicator("#ff0");
-    } else {
-      setIndicator("#f00");
+function shuffle(chars) {
+    for (let index = chars.length - 1; index > 0; index--) {
+        const randomIndex = randomInRange(0, index + 1);
+        [chars[index], chars[randomIndex]] = [chars[randomIndex], chars[index]];
     }
+    return chars.join("");
+}
+
+function syncOptions() {
+    const selected = getSelectedGenerators().length;
+    if (passwordLength < selected) passwordLength = selected;
+    updateSlider();
+    updateStrength();
+    formMessage.textContent = "";
+}
+
+function generatePassword() {
+    const generators = getSelectedGenerators();
+    if (!generators.length) {
+        formMessage.textContent = "Choose at least one character type to continue.";
+        return;
+    }
+    formMessage.textContent = "";
+    const characters = generators.map((generator) => generator());
+    while (characters.length < passwordLength) characters.push(generators[randomInRange(0, generators.length)]());
+    password = shuffle(characters);
+    passwordDisplay.value = password;
+    copyBtn.disabled = false;
+    generatedState.textContent = "Generated just now";
+    generatedState.classList.add("is-ready");
+    updateStrength();
 }
 
 async function copyContent() {
-    try {
-        await navigator.clipboard.writeText(passwordDisplay.value);
-        copyMsg.innerText = "copied";
-    }
-    catch(e) {
-        copyMsg.innerText = "Failed";
-    }
-    //to make copy wala span visible
+    try { await navigator.clipboard.writeText(password); copyMsg.textContent = "Copied"; }
+    catch { copyMsg.textContent = "Copy failed"; }
     copyMsg.classList.add("active");
-
-    setTimeout( () => {
-        copyMsg.classList.remove("active");
-    },2000);
-
+    clearTimeout(copyTimeout);
+    copyTimeout = setTimeout(() => copyMsg.classList.remove("active"), 1800);
 }
 
-function shufflePassword(array) {
-    //Fisher Yates Method
-    for (let i = array.length - 1; i > 0; i--) {
-        //random J, find out using random function
-        const j = Math.floor(Math.random() * (i + 1));
-        //swap number at i index and j index
-        const temp = array[i];
-        array[i] = array[j];
-        array[j] = temp;
-      }
-    let str = "";
-    array.forEach((el) => (str += el));
-    return str;
-}
+inputSlider.addEventListener("input", (event) => { passwordLength = Number(event.target.value); updateSlider(); updateStrength(); });
+allCheckBox.forEach((checkbox) => checkbox.addEventListener("change", syncOptions));
+generateBtn.addEventListener("click", generatePassword);
+copyBtn.addEventListener("click", () => { if (password) copyContent(); });
 
-function handleCheckBoxChange() {
-    checkCount = 0;
-    allCheckBox.forEach( (checkbox) => {
-        if(checkbox.checked)
-            checkCount++;
-    });
-
-    //special condition
-    if(passwordLength < checkCount ) {
-        passwordLength = checkCount;
-        handleSlider();
-    }
-}
-
-allCheckBox.forEach( (checkbox) => {
-    checkbox.addEventListener('change', handleCheckBoxChange);
-})
-
-
-inputSlider.addEventListener('input', (e) => {
-    passwordLength = e.target.value;
-    handleSlider();
-})
-
-
-copyBtn.addEventListener('click', () => {
-    if(passwordDisplay.value)
-        copyContent();
-})
-
-generateBtn.addEventListener('click', () => {
-    //none of the checkbox are selected
-
-    if(checkCount == 0) 
-        return;
-
-    if(passwordLength < checkCount) {
-        passwordLength = checkCount;
-        handleSlider();
-    }
-
-    // let's start the jouney to find new password
-    console.log("Starting the Journey");
-    //remove old password
-    password = "";
-
-    //let's put the stuff mentioned by checkboxes
-
-    // if(uppercaseCheck.checked) {
-    //     password += generateUpperCase();
-    // }
-
-    // if(lowercaseCheck.checked) {
-    //     password += generateLowerCase();
-    // }
-
-    // if(numbersCheck.checked) {
-    //     password += generateRandomNumber();
-    // }
-
-    // if(symbolsCheck.checked) {
-    //     password += generateSymbol();
-    // }
-
-    let funcArr = [];
-
-    if(uppercaseCheck.checked)
-        funcArr.push(generateUpperCase);
-
-    if(lowercaseCheck.checked)
-        funcArr.push(generateLowerCase);
-
-    if(numbersCheck.checked)
-        funcArr.push(generateRandomNumber);
-
-    if(symbolsCheck.checked)
-        funcArr.push(generateSymbol);
-
-    //compulsory addition
-    for(let i=0; i<funcArr.length; i++) {
-        password += funcArr[i]();
-    }
-    console.log("COmpulsory adddition done");
-
-    //remaining adddition
-    for(let i=0; i<passwordLength-funcArr.length; i++) {
-        let randIndex = getRndInteger(0 , funcArr.length);
-        console.log("randIndex" + randIndex);
-        password += funcArr[randIndex]();
-    }
-    console.log("Remaining adddition done");
-    //shuffle the password
-    password = shufflePassword(Array.from(password));
-    console.log("Shuffling done");
-    //show in UI
-    passwordDisplay.value = password;
-    console.log("UI adddition done");
-    //calculate strength
-    calcStrength();
-});
+updateSlider();
+updateStrength();
